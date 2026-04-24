@@ -1,57 +1,79 @@
-"""Format diff output for CLI display."""
+"""Human-readable formatting for diffs and validation results."""
+
+from __future__ import annotations
 
 from patchwork_env.differ import EnvDiff
+from patchwork_env.validator import ValidationResult
 
-ANSI_RED = "\033[91m"
-ANSI_GREEN = "\033[92m"
-ANSI_YELLOW = "\033[93m"
-ANSI_RESET = "\033[0m"
+_RESET = "\033[0m"
+_RED = "\033[31m"
+_GREEN = "\033[32m"
+_YELLOW = "\033[33m"
+_CYAN = "\033[36m"
+_BOLD = "\033[1m"
 
 
-def format_diff(
-    diff: EnvDiff,
-    base_label: str = "base",
-    target_label: str = "target",
-    color: bool = True,
-) -> str:
-    """Return a human-readable diff string."""
-    lines = []
-    header = f"--- {base_label}\n+++ {target_label}"
+def _colorize(text: str, color: str, use_color: bool = True) -> str:
+    if not use_color:
+        return text
+    return f"{color}{text}{_RESET}"
+
+
+def format_diff(diff: EnvDiff, use_color: bool = True) -> str:
+    """Render a diff as a human-readable string."""
+    lines: list[str] = []
+    header = _colorize("=== env diff ===", _BOLD, use_color)
     lines.append(header)
 
+    if not diff.has_diff():
+        lines.append(_colorize("No differences found.", _GREEN, use_color))
+        return "\n".join(lines)
+
     for key in sorted(diff.removed):
-        line = f"- {key}={diff.base_only[key]}"
-        lines.append(_colorize(line, ANSI_RED, color))
+        lines.append(_colorize(f"- {key}={diff.base[key]}", _RED, use_color))
 
     for key in sorted(diff.added):
-        line = f"+ {key}={diff.target_only[key]}"
-        lines.append(_colorize(line, ANSI_GREEN, color))
+        lines.append(_colorize(f"+ {key}={diff.target[key]}", _GREEN, use_color))
 
     for key in sorted(diff.changed):
-        old_val, new_val = diff.changed[key]
-        lines.append(_colorize(f"~ {key}: {old_val!r} -> {new_val!r}", ANSI_YELLOW, color))
-
-    if not diff.removed and not diff.added and not diff.changed:
-        lines.append("  (no differences)")
+        lines.append(
+            _colorize(f"~ {key}: {diff.base[key]!r} -> {diff.target[key]!r}", _YELLOW, use_color)
+        )
 
     return "\n".join(lines)
 
 
-def format_summary(diff: EnvDiff, color: bool = True) -> str:
-    """Return a short summary line of the diff."""
+def format_summary(diff: EnvDiff, use_color: bool = True) -> str:
+    """One-line summary of a diff."""
     parts = []
     if diff.added:
-        parts.append(_colorize(f"+{len(diff.added)} added", ANSI_GREEN, color))
+        parts.append(_colorize(f"+{len(diff.added)} added", _GREEN, use_color))
     if diff.removed:
-        parts.append(_colorize(f"-{len(diff.removed)} removed", ANSI_RED, color))
+        parts.append(_colorize(f"-{len(diff.removed)} removed", _RED, use_color))
     if diff.changed:
-        parts.append(_colorize(f"~{len(diff.changed)} changed", ANSI_YELLOW, color))
+        parts.append(_colorize(f"~{len(diff.changed)} changed", _YELLOW, use_color))
     if not parts:
-        return "No differences found."
-    return "  ".join(parts)
+        return _colorize("no diff", _GREEN, use_color)
+    return ", ".join(parts)
 
 
-def _colorize(text: str, color_code: str, enabled: bool) -> str:
-    if not enabled:
-        return text
-    return f"{color_code}{text}{ANSI_RESET}"
+def format_validation(result: ValidationResult, use_color: bool = True) -> str:
+    """Render a ValidationResult as a human-readable string."""
+    lines: list[str] = []
+    header = _colorize("=== env validation ===", _BOLD, use_color)
+    lines.append(header)
+
+    if result.is_valid:
+        lines.append(_colorize("All checks passed.", _GREEN, use_color))
+        return "\n".join(lines)
+
+    for key in sorted(result.missing_required):
+        lines.append(_colorize(f"  missing required key: {key}", _RED, use_color))
+
+    for key in sorted(result.unknown_keys):
+        lines.append(_colorize(f"  unknown key: {key}", _CYAN, use_color))
+
+    for key, msg in sorted(result.type_errors.items()):
+        lines.append(_colorize(f"  type error [{key}]: {msg}", _YELLOW, use_color))
+
+    return "\n".join(lines)
