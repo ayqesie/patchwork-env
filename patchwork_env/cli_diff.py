@@ -8,6 +8,17 @@ from patchwork_env.differ import diff_envs
 from patchwork_env.formatter import format_diff, format_summary
 
 
+def _resolve_file(path: Path, label: str) -> int | None:
+    """Check that a file exists and is a file. Returns 2 on error, None on success."""
+    if not path.exists():
+        print(f"Error: {label} file not found: {path}", file=sys.stderr)
+        return 2
+    if not path.is_file():
+        print(f"Error: {label} path is not a file: {path}", file=sys.stderr)
+        return 2
+    return None
+
+
 def run_diff(args=None):
     """
     Run the diff command.
@@ -39,13 +50,11 @@ def run_diff(args=None):
     base_path = Path(parsed.base)
     target_path = Path(parsed.target)
 
-    if not base_path.exists():
-        print(f"Error: base file not found: {base_path}", file=sys.stderr)
-        return 2
+    if (code := _resolve_file(base_path, "base")) is not None:
+        return code
 
-    if not target_path.exists():
-        print(f"Error: target file not found: {target_path}", file=sys.stderr)
-        return 2
+    if (code := _resolve_file(target_path, "target")) is not None:
+        return code
 
     base_env = parse_env_file(base_path)
     target_env = parse_env_file(target_path)
