@@ -31,6 +31,21 @@ class AuditResult:
             parts.append(f"{len(self.placeholder_values)} placeholder value(s)")
         return ", ".join(parts) if parts else "no issues found"
 
+    def all_flagged_keys(self) -> List[str]:
+        """Return a deduplicated list of all keys that have any issue."""
+        seen = set()
+        result = []
+        for key in (
+            self.empty_values
+            + self.duplicate_keys
+            + self.suspicious_values
+            + self.placeholder_values
+        ):
+            if key not in seen:
+                seen.add(key)
+                result.append(key)
+        return result
+
 
 _PLACEHOLDER_PATTERNS = (
     "changeme",
