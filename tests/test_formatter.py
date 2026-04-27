@@ -48,6 +48,14 @@ def test_format_diff_custom_labels():
     assert "+++ prod" in output
 
 
+def test_format_diff_unchanged_key_not_shown():
+    """Keys that are identical in both envs should not appear in the diff output."""
+    d = diff_envs(BASE, TARGET)
+    output = format_diff(d, color=False)
+    # PORT is the same in both BASE and TARGET, so it should not be listed
+    assert "PORT" not in output
+
+
 def test_format_summary_shows_counts():
     d = diff_envs(BASE, TARGET)
     output = format_summary(d, color=False)
