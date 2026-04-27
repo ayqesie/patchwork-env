@@ -11,6 +11,22 @@ from patchwork_env.validator import validate_env
 from patchwork_env.formatter import format_validation
 
 
+def _resolve_schema(args):
+    """Resolve and return the schema from CLI args, or (None, error_message, exit_code)."""
+    if args.schema:
+        schema_path = Path(args.schema)
+        if not schema_path.exists():
+            return None, f"error: schema file not found: {schema_path}", 2
+        return load_schema_from_toml(schema_path), None, 0
+    elif args.base_env:
+        base_path = Path(args.base_env)
+        if not base_path.exists():
+            return None, f"error: base env file not found: {base_path}", 2
+        return schema_from_base_env(base_path), None, 0
+    else:
+        return None, "error: supply --schema or --base-env to define the schema.", 2
+
+
 def run_validate(argv: list[str] | None = None) -> int:
     """Validate a .env file.  Returns an exit code.
 
@@ -46,25 +62,10 @@ def run_validate(argv: list[str] | None = None) -> int:
         print(f"error: env file not found: {env_path}", file=sys.stderr)
         return 2
 
-    # Resolve schema
-    if args.schema:
-        schema_path = Path(args.schema)
-        if not schema_path.exists():
-            print(f"error: schema file not found: {schema_path}", file=sys.stderr)
-            return 2
-        schema = load_schema_from_toml(schema_path)
-    elif args.base_env:
-        base_path = Path(args.base_env)
-        if not base_path.exists():
-            print(f"error: base env file not found: {base_path}", file=sys.stderr)
-            return 2
-        schema = schema_from_base_env(base_path)
-    else:
-        print(
-            "error: supply --schema or --base-env to define the schema.",
-            file=sys.stderr,
-        )
-        return 2
+    schema, error_msg, exit_code = _resolve_schema(args)
+    if error_msg:
+        print(error_msg, file=sys.stderr)
+        return exit_code
 
     env = parse_env_file(env_path)
     result = validate_env(env, schema)
