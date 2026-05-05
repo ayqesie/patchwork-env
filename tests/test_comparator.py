@@ -96,3 +96,25 @@ def test_custom_paths_stored():
     r = compare_env_dicts({}, {}, base_path=".env.base", target_path=".env.prod")
     assert r.base_path == ".env.base"
     assert r.target_path == ".env.prod"
+
+
+def test_matching_pairs_does_not_contain_differing_keys(result):
+    """Keys with different values should not appear in matching_pairs."""
+    for key in result.differing_pairs:
+        assert key not in result.matching_pairs
+
+
+def test_differing_pairs_does_not_contain_matching_keys(result):
+    """Keys with identical values should not appear in differing_pairs."""
+    for key in result.matching_pairs:
+        assert key not in result.differing_pairs
+
+
+def test_base_only_keys_not_in_shared(result):
+    """Keys exclusive to base should not appear in shared_keys."""
+    assert result.base_only_keys.isdisjoint(result.shared_keys)
+
+
+def test_target_only_keys_not_in_shared(result):
+    """Keys exclusive to target should not appear in shared_keys."""
+    assert result.target_only_keys.isdisjoint(result.shared_keys)
