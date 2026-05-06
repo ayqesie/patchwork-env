@@ -26,6 +26,10 @@ class DeprecateResult:
     def all_deprecated_keys(self) -> List[str]:
         return list(self.deprecated.keys())
 
+    def keys_with_replacements(self) -> Dict[str, str]:
+        """Return only deprecated keys that have a suggested replacement."""
+        return {key: repl for key, repl in self.deprecated.items() if repl is not None}
+
 
 def deprecate_env(
     env: Dict[str, str],
