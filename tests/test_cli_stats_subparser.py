@@ -42,6 +42,17 @@ def test_aggregate_short_flag(parser):
     assert ns.aggregate is True
 
 
+def test_aggregate_long_flag(parser):
+    ns = parser.parse_args(["stats", "--aggregate", "a.env"])
+    assert ns.aggregate is True
+
+
 def test_func_is_callable(parser):
     ns = parser.parse_args(["stats", "a.env"])
     assert callable(ns.func)
+
+
+def test_stats_requires_at_least_one_file(parser):
+    """Parsing 'stats' with no files should raise a SystemExit error."""
+    with pytest.raises(SystemExit):
+        parser.parse_args(["stats"])
