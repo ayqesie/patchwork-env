@@ -38,6 +38,14 @@ class EnvProfile:
         ]
         return "\n".join(lines)
 
+    def keys_needing_attention(self) -> List[str]:
+        """Return keys that are empty or still have placeholder values.
+
+        These are the most likely candidates to be filled in before
+        deploying, so it's handy to have them in one place.
+        """
+        return sorted(set(self.empty_values) | set(self.placeholder_values))
+
 
 def profile_env(env: Dict[str, str]) -> EnvProfile:
     """Analyse an env dict and return an EnvProfile."""
