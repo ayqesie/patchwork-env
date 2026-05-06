@@ -37,18 +37,32 @@ def run_mask(args: argparse.Namespace) -> int:
     print(result.summary())
 
     if args.output:
-        content = to_env_string(result.masked)
-        try:
-            with open(args.output, "w", encoding="utf-8") as fh:
-                fh.write(content)
-            print(f"masked env written to {args.output}")
-        except OSError as exc:
-            print(f"error: could not write output: {exc}", file=sys.stderr)
-            return 2
+        _write_masked_output(result.masked, args.output)
     elif args.print:
         print(to_env_string(result.masked))
 
     return 1 if result.has_masked() else 0
+
+
+def _write_masked_output(masked: dict, output_path: str) -> int:
+    """Write masked env content to *output_path*.
+
+    Args:
+        masked: Mapping of env keys to (possibly masked) values.
+        output_path: Destination file path.
+
+    Returns:
+        0 on success, 2 on write error.
+    """
+    content = to_env_string(masked)
+    try:
+        with open(output_path, "w", encoding="utf-8") as fh:
+            fh.write(content)
+        print(f"masked env written to {output_path}")
+        return 0
+    except OSError as exc:
+        print(f"error: could not write output: {exc}", file=sys.stderr)
+        return 2
 
 
 def add_mask_subparser(subparsers: argparse._SubParsersAction) -> None:  # noqa: SLF001
