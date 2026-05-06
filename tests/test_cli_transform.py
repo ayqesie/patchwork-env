@@ -63,6 +63,17 @@ def test_keys_filter_applied(env_files):
     assert "world" in content
 
 
+def test_output_not_written_when_no_changes(env_files):
+    """When the transform produces no changes and an output path is given,
+    the output file should still be written (idempotent copy)."""
+    f = _write(env_files / "a.env", "KEY=ALREADY_UPPER\n")
+    out = env_files / "out.env"
+    args = _args(file=str(f), rule=["upper"], output=str(out))
+    run_transform(args)
+    assert out.exists()
+    assert "ALREADY_UPPER" in out.read_text()
+
+
 def test_parse_rule_no_arg():
     r = _parse_rule("upper")
     assert r == {"rule": "upper"}
